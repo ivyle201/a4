@@ -321,36 +321,46 @@ ohmthitiwat
 
 5) A major part of data science is visualizing the results in order to present them to your peers. Without visualizing your results, your results won't get the attention they deserve from other people. Plot a network cluster you got for retweets and a cluster for replies (from this and the previous assignment) in a network visualization tool, such as Gephi. As shown here, you can input your csv relationships and plot them. In case the networks are too big for visualizing, you should check with the professor how to handle it:  https://gephi.org/users/supported-graph-formats/csv-format/Links to an external site.
 
-# get subset of data to graph
-# get only authors with less than 200 retweets
-[vivian@sjsu A4]$ awk '$1 < 200 {print $2}' top10_retweeted_AuthorIDs.tsv > network_graph_authors.txt
-[vivian@sjsu A4]$ cat network_graph_authors.txt
-1229752606714728454
-380648579
-80802900
+# get graph data for single retweeted author
+[vivian@sjsu A4]$ fgrep 1891490382 a4q1.tsv > retweet_network_graph.tsv
+[vivian@sjsu A4]$ head retweet_network_graph.tsv 
+1891490382	1264114113925402624
+1891490382	139109800
+1891490382	139109800
+1891490382	192374137
+1891490382	3040987923
+1891490382	870244616003403781
+1891490382	41653384
+1891490382	1028022611324747776
+1891490382	1373739644
+1891490382	870244616003403781
 
-[vivian@sjsu A4]$ fgrep -f network_graph_authors.txt a4q1.tsv > network_graph.tsv
-[vivian@sjsu A4]$ head network_graph.tsv
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
-1229752606714728454	1229752606714728454
+
+# get graph data for single replied author
+[vivian@sjsu A4]$ fgrep 3453306553 ../A3/Q1.tsv > replies_network_graph.tsv
+[vivian@sjsu A4]$ head replies_network_graph.tsv
+3453306553 	105613985
+3453306553 	1214489977762959362
+3453306553 	1236491189492174848
+3453306553 	1269018935371771904
+3453306553 	1329590133264326656
+3453306553 	1395904932113383425
+3453306553 	1401861298233647106
+3453306553 	1493422299462402052
+3453306553 	1557320480
+3453306553 	1573800344
 
 
 
 6) Describe in a few sentences (2-3 sentences) what the networks you plotted show at the bottom of a4.txt.
 
-The graph shows that it's common to have a single follower retweet an author frequently
-For example, see user 711608180535640064 which retweeted user 80802900 81 times
-and user 3231054096 which retweeter user 380648579 50 times
+The graphs show that it's common to have a single follower retweet or reply to an author frequently
+
+For example, see user 870244616003403781 which retweeted user 1891490382 188 times
+And user 1573800344, which replied to user 3453306553 11 times
+
 This suggests that influence of a particular user might be better measured by 
-the number of different users that retweet rather than total number of retweets
+the number of different users that retweet or reply rather than total number of retweets and replies
 
 
 gnuplot> exit
