@@ -1,0 +1,364 @@
+Script started on 2022-10-16 13:17:50-04:00
+[vivian@sjsu ~]$ 
+[vivian@sjsu ~]$ mkdir A4
+[vivian@sjsu ~]$ cd A4
+[vivian@sjsu A4]$
+
+
+0) Find the top 10 users who got retweeted the most from other users (for this you need both files, use fgrep)
+
+
+# Cut author and reference columns, search for retweet rows only, clean up reference column to get reference message ID, cut only reference message ID column, sort and remove any empty lines
+# This is a list of original message IDs that got retweeted, one message ID per retweet
+
+[vivian@sjsu A4]$ cut -f 2,5 downloaded_tweets_extend_nolf2.tsv | grep "type=retweeted" | sed -r 's/\[<ReferencedTweet id=([0-9]+) type=retweeted\]/\1/' | cut -f2 | sort | sed -r '/^$/d' > sorted_alpha_retweeted_ref_MID.
+tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head -n 4 sorted_alpha_retweeted_ref_MID.tsv
+1004656199885836288
+1017456403961835520
+1023111834587607041
+1026437890731999232
+
+
+# Cut message ID and author IDs from original tweets
+
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ cut -f1,2 downloaded_tweets_extend_original_nolf2.tsv > cut_col1-2_downloaded_original.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head -n 4 cut_col1-2_downloaded_original.tsv
+id      author
+1004656199885836288     457060718
+1017456403961835520     140496030
+1023111834587607041     202615056
+[vivian@sjsu A4]$
+
+# Find all original message IDs from the original file (using cut columns from above) and sort
+
+[vivian@sjsu A4]$ fgrep -f sorted_alpha_retweeted_ref_MID.tsv cut_col1-2_downloaded_original.tsv | sort > sorted_fgrep_retweeted_MID_original_MID_AID.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head -n 4 sorted_fgrep_retweeted_MID_original_MID_AID.tsv
+1004656199885836288     457060718
+1017456403961835520     140496030
+1023111834587607041     202615056
+1026437890731999232     202615056
+[vivian@sjsu A4]$
+
+
+# Join the messageIDs file (which has one messageID per retweet) and the messageIDs found from the original file, keep only the author column, sort and count unique and reverse sort by count.
+# It's important to have this join since the same tweet can be retweeted multiple times by different users
+
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ join -t $'\t' -o1.1,2.2 sorted_alpha_retweeted_ref_MID.tsv sorted_fgrep_retweeted_MID_original_MID_AID.tsv | cut -f2 | sort | uniq -c | sort -nr |  head -n 10 > top10_retweeted_AuthorIDs.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ cat top10_retweeted_AuthorIDs.tsv
+   1076 18831926
+    438 1891490382
+    362 163018653
+    323 1495480590572961792
+    316 1219232377605644289
+    255 1231514832479948802
+    208 42836999
+    199 1229752606714728454
+    193 380648579
+    179 80802900
+
+
+Next, repeat assignment #3 (questions 1-4), except use retweets instead of replies.
+
+1) Represent influence between users as a directional graph of users, save as a list of lines, as described next:
+Represent a user A getting a retweets from another user B as a line A_ID,B_ID (A_ID and B_ID are the comma separated IDs of user A and B, though you can also tab-separate A_ID and B_ID if it fits you). You can get the retweets from the file "downloaded_tweets_extend_nolf2.tsv".
+All these lines you will place in a csv (or tsv) file, which will essentially be a directed graph.
+Clarification: Q1 asks for a graph in the form of pairs of users in a text file (no image). Sort the file, such that all lines are consecutive for the same user who got replies. e.g. userZ,userA userZ,userB userZ,userS .....
+
+
+# cut author and reference column from retweets file, find only retweets, clean up the reference column to get reference message ID
+# this file contains the original message IDs and the retweeting author IDs
+
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$  cut -f2,5 downloaded_tweets_extend_nolf2.tsv | grep "type=retweeted" | sed -r 's/\[<ReferencedTweet id=([0-9]+) type=retweeted\]/\1/' | sort -k2 > sorted_cutf25_grep_retweeted_sedRegex_downloaded_extend.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head -n 4 sorted_cutf25_grep_retweeted_sedRegex_downloaded_extend.tsv
+			 	   1517901421391368194
+631283641       	   1004656199885836288
+940778288871542786      1017456403961835520
+1387010761994682371     1023111834587607041
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+
+# Join the retweeting author IDs file and the original author IDs file (using original message ID as key), keep only the author columns, reverse column order
+# Column A -> original author ID
+# Column B -> retweeting author ID
+
+[vivian@sjsu A4]$ join -t $'\t' -1 2 -o2.2,1.1 sorted_cutf25_grep_retweeted_sedRegex_downloaded_extend.tsv sorted_fgrep_retweeted_MID_original_MID_AID.tsv | awk 'BEGIN {print "A_ID\tB_ID"} {print $0}' > a4q1.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head a4q1.tsv 
+
+(Original tweet author IDs and Retweeter author IDs)
+A_ID		B_ID
+457060718	631283641
+140496030	940778288871542786
+202615056	1387010761994682371
+202615056	1387010761994682371
+288417339	1387010761994682371
+80797203	1387010761994682371
+1223514530	41186732
+74468291	1387010761994682371
+741190491195248642	1387010761994682371
+
+
+
+2) Produce clusters (groups of influence) by ranking the users who got retweet by their number of retweets. Keep only the largest clusters by "cutting" at a threshold of 3; in order words, keep just the graph for users who got 3 or more replies (@banish suggested on Discord there are 110-120 such users, excluding the bots who replied to themselves).
+Clarification: for Q2 you need to keep the graph subset from Q1 for users who got 3 or more replies. This includes the id's of all the users who got three or more replies and those who replied. The info is already in the Q1 graph, thus you need to keep a subset of the graph.
+So in the example above, userZ got 3 replies from other users and you will want to keep those 3 lines because s/he passes the threshold. The left column comes from in_reply_to_user_id ($6). The right column comes from author ($2).
+
+
+(Top authors that got retweeted at least 3 times)
+
+# remove header column from question 1 results, cut to get only original author column, sort and unique count and reverse sort, keep only rows that have counts greater than or equal to 3
+
+[vivian@sjsu A4]$ tail -n +2 a4q1.tsv | cut -f1 | sort | uniq -c | sort -nr | awk '{if ($1>=3) print $0}' | head -n 10
+   1076 18831926
+    438 1891490382
+    362 163018653
+    323 1495480590572961792
+    316 1219232377605644289
+    255 1231514832479948802
+    208 42836999
+    199 1229752606714728454
+    193 380648579
+    179 80802900
+
+
+(Group the number of times that author were retweeted, example: 936 authors that got retweeted 3 times)
+
+# remove header column from question 1 results, cut to get only original author column, sort and unique count and reverse sort, keep only rows that have counts greater than or equal to 3, keep only counts column, sort and unique count and reverse sort, swap columns and sort by cluster
+
+vivian@sjsu A4]$ tail -n +2 a4q1.tsv | cut -f1 | sort | uniq -c | sort -nr | awk '{if ($1>=3) print $1}' | sort | uniq -c | sort -nr | awk '{print $1"\t"$2}' | sort -k2 -n > a4q2.tsv
+[vivian@sjsu A4]$
+
+[vivian@sjsu A4]$ head a4q2.tsv
+936     3
+530     4
+303     5
+230     6
+177     7
+131     8
+105     9
+70      10
+52      11
+52      12
+ 
+
+3) Plot the sizes of clusters as a histogram to show how many clusters of each size resulted.
+Clarification: Q3 asks for a histogram in the form of a plot image, using gnuplot or another charting tool. A histogram is a plot like this, where X is the sizes and Y is the number of occurrences (use bins of size 1: show bars for size 3, size 4, size 5, ... on the X axis).
+
+
+vivian@sjsu:~/A4[vivian@sjsu A4]$ ../gnuplot
+
+	G N U P L O T
+	Version 5.4 patchlevel 5    last modified 2022-09-28 
+
+	Copyright (C) 1986-1993, 1998, 2004, 2007-2022
+	Thomas Williams, Colin Kelley and many others
+
+	gnuplot home:     http://www.gnuplot.info
+	faq, bugs, etc:   type "help FAQ"
+	immediate help:   type "help"  (plot window: hit 'h')
+
+Terminal type is now 'unknown'
+gnuplot> 
+gnuplot> set style data histograms
+gnuplot> set style fill solid 1.0 border -1 
+gnuplot> set output "A4_plot.svg"                                    
+gnuplot> set terminal svg size 2400,480           
+gnuplot> set xlabel "clusters (groups of influence)"  
+gnuplot> set ylabel "Number of Users"    
+gnuplot> plot 'a4q2.tsv' using 1 : xtic(2)
+                   
+
+
+
+
+4) Find the 30 most frequent hashtags in these largest clusters of replies you kept (for the users/tweets that got replied to, not the users/tweets doing the replies. For Q4 use the tweets that were replies to others in order to compute the hashtag frequency, because there are a few referenced IDs for replies that are not found in the file, i.e. the referenced IDs for replied_to tweets were not found in the file). Compare to the 30 most frequent hashtags you found in assignment #2 (overall, question 5). Which hashtags appear in these clusters that did not appear in the frequent hashtags from assignment #2 (you can use sort and diff for this)?
+
+# using answer from question 1, remove header, cut original author column, sort (alpha) and count unique and reverse sort, keep only counts greater than 3 and keep only author column
+# this is the list of authors in our target data set
+
+[vivian@sjsu A4]$ tail -n +2 a4q1.tsv | cut -f1 | sort | uniq -c | sort -nr | awk '{if ($1>=3) print $2}' > a4q4_original_AuthorIDs_gotRetweets-3xORgreater.txt
+[vivian@sjsu A4]$ head a4q4_original_AuthorIDs_gotRetweets-3xORgreater.txt
+18831926
+1891490382
+163018653
+1495480590572961792
+1219232377605644289
+1231514832479948802
+42836999
+1229752606714728454
+380648579
+80802900
+
+# find the authors in the original tweets file and cut the message ID column
+# this is a list of the original message IDs in our target data set
+
+[vivian@sjsu A4]$ fgrep -f a4q4_original_AuthorIDs_gotRetweets-3xORgreater.txt downloaded_tweets_extend_original_nolf2.tsv | cut -f1 > fgrep_orig-AuthorIDs-gotRetweets-3Rgreater_downloadOrig_awkPrint_origMIDs.tsv
+[vivian@sjsu A4]$ head fgrep_orig-AuthorIDs-gotRetweets-3Rgreater_downloadOrig_awkPrint_origMIDs.tsv
+1017456403961835520
+1045330832917839873
+1045333151877234688
+1045373050751860737
+1045375787514249217
+1045377009205960704
+1045377571376967680
+1045378154766848000
+1045378819182358528
+1045379226382172160
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ 
+
+# cut author, hashtag and reference columns from retweets file, search for retweets only, clean up reference column to get reference message ID
+# this is a list of all retweet messages and their hashtags
+
+[vivian@sjsu A4]$ cut -f2,4,5 downloaded_tweets_extend_nolf2.tsv | grep "type=retweeted" | sed -r 's/\[<ReferencedTweet id=([0-9]+) type=retweeted\]/\1/' > cutf245_typeRetweeted_sedRegex_downloaded_extend.tsv
+[vivian@sjsu A4]$ head cutf245_typeRetweeted_sedRegex_downloaded_extend.tsv
+308045021	"journalism,NPR"	1513654494504136709
+308045021					1513774168348704770
+308045021	obgyntwitter		1519864927997075458
+308045021					1519742972186800130
+308045021					1519666326419218432
+308045021					1519450979204276227
+308045021	COVID19			1519075500588687361
+308045021	LongCovid			1518733566590394368
+308045021	"ImmunizeUnder5s,CovidIsntOver"	1518538452240900096
+308045021	ThankYouDonWinslow	1517876638461038592
+
+
+# find all the target message IDs in the retweet messages
+[vivian@sjsu A4]$                                                                                                                                                                                                             
+[vivian@sjsu A4]$ fgrep -f fgrep_orig-AuthorIDs-gotRetweets-3Rgreater_downloadOrig_awkPrint_origMIDs.tsv cutf245_typeRetweeted_sedRegex_downloaded_extend.tsv | head                                                          
+308045021       "journalism,NPR"        	1513654494504136709                                                                                                                                                                   
+308045021               				1513774168348704770                                                                                                                                                                                   
+308045021               				1519742972186800130                                                                                                                                                                                   
+308045021               				1519450979204276227                                                                                                                                                                                   
+308045021       COVID19 				1519075500588687361                                                                                                                                                                                   
+308045021       LongCovid       		1518733566590394368                                                                                                                                                                           
+308045021       ThankYouDonWinslow      	1517876638461038592                                                                                                                                                                   
+308045021               				1517873905570037760                                                                                                                                                                                   
+308045021       COVID19 				1517847305948434434                                                                                                                                                                                   
+308045021               				1517923309203075072                                                                                                                                                                                   
+[vivian@sjsu A4]$ [vivian@sjsu A4]$                                                                                                                                                                                                    [15/1806]
+
+# find all the target message IDs in the retweet messages, cut just the hashtags and clean it up so that it only contains hashtags,
+# sort and unique count and reverse sort
+# hashtags clean up: convert commas into newlines, get rid of quotes, convert upper case to lower case to make it case insensitive
+
+[vivian@sjsu A4]$ fgrep -f fgrep_orig-AuthorIDs-gotRetweets-3Rgreater_downloadOrig_awkPrint_origMIDs.tsv cutf245_typeRetweeted_sedRegex_downloaded_extend.tsv | cut -f 2 | tr ',' '\n' | tr '"' '\n'| tr '[:upper:]' '[:lower:
+]' | grep . | sort | uniq -c | sort -nr | head  
+                                                                                                                                                                              
+   2098 ukraine                                                                                                                                                                                                               
+   1155 covid19                                                                                                                                                                                                               
+    966 longcovid                                                                                                                                                                                                             
+    910 russia                                                                                                                                                                                                                
+    351 russian                                                                                                                                                                                                               
+    323 omicron                                                                                                                                                                                                               
+    320 breaking                                                                                                                                                                                                              
+    267 kyiv                                                                                                                                                                                                                  
+    266 auspol                                                                                                                                                                                                                
+    253 covid                                                                                                                                                                                                                 
+
+# after getting counts and sorting, get only hashtags column and take top 30
+
+[vivian@sjsu A4]$ fgrep -f fgrep_orig-AuthorIDs-gotRetweets-3Rgreater_downloadOrig_awkPrint_origMIDs.tsv cutf245_typeRetweeted_sedRegex_downloaded_extend.tsv | cut -f 2 | tr ',' '\n' | tr '"' '\n'| tr '[:upper:]' '[:lower:
+]' | grep . | sort | uniq -c | sort -nr | awk '{print $2}' | head -n 30 > a4q4_top_30_retweet_hashtags.tsv
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$
+[vivian@sjsu A4]$ head a4q4_top_30_retweet_hashtags.tsv
+ukraine
+covid19
+longcovid
+russia
+russian
+omicron
+breaking
+kyiv
+auspol
+covid
+
+
+########
+Assignment#2,Q5 ->top30_hashtags command:
+[vivian@sjsu ~]$ cut -f4 A2/downloaded_tweets_extend_nolf2_NOBOT.tsv | tr ',' '\n' | tr '"' '\n' | tr '[:upper:]' '[:lower:]' | grep . | sort | uniq -c | sort -nr | head -n 30 > q5A2_top30_hashtags.tsv 
+########
+
+# reverse fgrep to find the difference between the two files
+
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ fgrep -f ../A2/q5A2_top30_hashtags.tsv -vw a4q4_top_30_retweet_hashtags.tsv > a4q4_diff.tsv
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ 
+[vivian@sjsu A4]$ cat a4q4_diff.tsv 
+ba2
+fluke_natouch
+ukrainian
+england
+kharkiv
+anonymous
+โอห์มไง
+uk
+china
+belarus
+ohmthitiwat
+[vivian@sjsu A4]$ 
+
+
+5) A major part of data science is visualizing the results in order to present them to your peers. Without visualizing your results, your results won't get the attention they deserve from other people. Plot a network cluster you got for retweets and a cluster for replies (from this and the previous assignment) in a network visualization tool, such as Gephi. As shown here, you can input your csv relationships and plot them. In case the networks are too big for visualizing, you should check with the professor how to handle it:  https://gephi.org/users/supported-graph-formats/csv-format/Links to an external site.
+
+# get subset of data to graph
+# get only authors with less than 200 retweets
+[vivian@sjsu A4]$ awk '$1 < 200 {print $2}' top10_retweeted_AuthorIDs.tsv > network_graph_authors.txt
+[vivian@sjsu A4]$ cat network_graph_authors.txt
+1229752606714728454
+380648579
+80802900
+
+[vivian@sjsu A4]$ fgrep -f network_graph_authors.txt a4q1.tsv > network_graph.tsv
+[vivian@sjsu A4]$ head network_graph.tsv
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+1229752606714728454	1229752606714728454
+
+
+
+6) Describe in a few sentences (2-3 sentences) what the networks you plotted show at the bottom of a4.txt.
+
+The graph shows that it's common to have a single follower retweet an author frequently
+For example, see user 711608180535640064 which retweeted user 80802900 81 times
+and user 3231054096 which retweeter user 380648579 50 times
+This suggests that influence of a particular user might be better measured by 
+the number of different users that retweet rather than total number of retweets
+
+
+gnuplot> exit
+vivian@sjsu:~/A4[vivian@sjsu A4]$ 
+vivian@sjsu:~/A4[vivian@sjsu A4]$ exit
+exit
+
+Script done on 2022-10-22 01:59:28-04:00
+[vivian@sjsu A4]$ 
+
+
